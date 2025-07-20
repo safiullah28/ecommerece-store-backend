@@ -33,7 +33,8 @@ app.use("/api/cart", cartRoute);
 app.use("/api/payments", paymentRoute);
 
 const port = process.env.PORT;
-app.listen(port, () => {
-  connectDB();
-  console.log(`App listening on PORT ${port}`);
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`App listening on PORT ${port}`);
+  });
 });

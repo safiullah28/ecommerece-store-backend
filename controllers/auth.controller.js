@@ -21,18 +21,16 @@ const storeRefreshToken = async (id, refreshToken) => {
 const setCookies = async (res, accessToken, refreshToken) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    // secure: false,
-    sameSite: "strict",
-    maxAge: 15 * 60 * 1000,
+    secure: true,
+    sameSite: "none",
+    maxAge: "30d",
   });
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    // secure: false,
+    secure: true,
 
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: "none",
+    maxAge: "30d",
   });
 };
 export const Signup = async (req, res) => {
@@ -169,7 +167,7 @@ export const resetPassword = async (req, res) => {
     }
     const user = await User.findOne({
       resetToken,
-      resetTokenExpiry: { $gt: Date.now() }, // Check if token is not expired
+      resetTokenExpiry: { $gt: Date.now() }, 
     });
 
     if (!user) {
