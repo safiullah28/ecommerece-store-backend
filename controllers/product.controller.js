@@ -6,9 +6,8 @@ export const getAllProducts = async (req, res) => {
     const products = await Product.find({});
     res.json(products);
   } catch (error) {
-    console.error("Error in getAllProducts controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server Error : " + error,
     });
   }
 };
@@ -28,9 +27,8 @@ export const getFeaturedProducts = async (req, res) => {
     await redis.set("featuredProducts", JSON.stringify(featuredproducts));
     res.json(featuredproducts);
   } catch (error) {
-    console.error("Error in getFeaturedProducts controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server Error : " + error,
     });
   }
 };
@@ -59,8 +57,9 @@ export const createProduct = async (req, res) => {
 
     res.status(201).json(product);
   } catch (error) {
-    console.log("Error in createProduct controller", error);
-    res.status(500).json({ message: "Error in createProduct" + error });
+    res.status(500).json({
+      message: "Internal server Error : " + error,
+    });
   }
 };
 
@@ -75,21 +74,17 @@ export const deleteProduct = async (req, res) => {
     }
     if (product.image) {
       const publicId = product.image.split("/").pop().split(".")[0];
-      console.log("Public ID : " + publicId);
       try {
         await cloudinary.uploader.destroy(`products/${publicId}`);
-        console.log("Image deleted from cloudinary");
       } catch (error) {
-        console.log("Error in deleting image : ", error);
         throw error;
       }
     }
     await Product.findByIdAndDelete(id);
     res.json("Product deleted successfully");
   } catch (error) {
-    console.error("Error in deleteProduct controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server Error : " + error,
     });
   }
 };
@@ -112,9 +107,8 @@ export const getRecommendedProducts = async (req, res) => {
     ]);
     res.json(products);
   } catch (error) {
-    console.error("Error in getRecommendedProducts controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server Error : " + error,
     });
   }
 };
@@ -127,9 +121,8 @@ export const getProductsByCategory = async (req, res) => {
     });
     res.status(200).json(products);
   } catch (error) {
-    console.error("Error in getProductsByCategory controller " + error);
     res.status(500).json({
-      message: "Error in getProductsByCategory: " + error,
+      message: "Internal server Error : " + error,
     });
   }
 };
@@ -148,9 +141,8 @@ export const toggleFeaturedProduct = async (req, res) => {
       res.json(product);
     }
   } catch (error) {
-    console.error("Error in toggleFeaturedProduct controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server Error : " + error,
     });
   }
 };
@@ -160,9 +152,8 @@ async function updateFeaturedProductsCache() {
     const featuredProducts = await Product.find({ isFeatured: true }).lean();
     await redis.set("featuredProducts", JSON.stringify(featuredProducts));
   } catch (error) {
-    console.error("Error in updateFeaturedProductsCache controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server Error : " + error,
     });
   }
 }

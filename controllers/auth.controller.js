@@ -17,6 +17,7 @@ const setCookies = async (res, accessToken) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: true,
+    // secure: process.env.NODE_ENV === "production",
     sameSite: "none",
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
@@ -60,8 +61,7 @@ export const Signup = async (req, res) => {
 
       return res.status(400).json({ errors });
     }
-    res.status(500).json({ message: "error in Signup controller " + error });
-    console.error("error in Signup controller ", error);
+    res.status(500).json({ message: "Internal server error " + error.message });
   }
 };
 
@@ -91,7 +91,7 @@ export const Login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("error in Login controller ", error);
+    res.status(500).json({ message: "Internal server error " + error.message });
   }
 };
 export const Logout = async (req, res) => {
@@ -99,10 +99,7 @@ export const Logout = async (req, res) => {
     res.cookie("accessToken", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.error("error in Logout controller ", error);
-    res.status(500).json({
-      message: error,
-    });
+    res.status(500).json({ message: "Internal server error " + error.message });
   }
 };
 
@@ -127,9 +124,8 @@ export const forgotPassword = async (req, res) => {
       message: "Your reset Password link has been sent to your email",
     });
   } catch (error) {
-    console.error("Error in forgotPassword controller ", error);
     res.status(500).json({
-      message: error,
+      message: "Internal server error " + error.message,
     });
   }
 };
@@ -165,9 +161,8 @@ export const resetPassword = async (req, res) => {
       message: "Password reset successfully",
     });
   } catch (error) {
-    console.error("error in resetPassword controller ", error);
     res.status(500).json({
-      message: "Error resetting password : " + error,
+      message: "Error resetting password : " + error.message,
     });
   }
 };
@@ -181,9 +176,8 @@ export const adminRoute = async (req, res, next) => {
       });
     }
   } catch (e) {
-    console.error("error in adminRoute controller ", e);
     res.status(500).json({
-      message: "Error in adminRoute : " + e,
+      message: "Internal server error " + error.message,
     });
   }
 };
@@ -193,9 +187,8 @@ export const getProfile = async (req, res) => {
     const user = req.user;
     res.status(201).json(user);
   } catch (e) {
-    console.error("error in getProfile controller ", e);
     res.status(500).json({
-      message: "Error in getProfile : " + e,
+      message: "Internal server error " + error.message,
     });
   }
 };

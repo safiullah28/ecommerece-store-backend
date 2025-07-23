@@ -59,9 +59,8 @@ export const createCheckoutSession = async (req, res) => {
       totalAmount: totalAmount / 100,
     });
   } catch (error) {
-    console.error("Error in createCheckoutSession controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server error : " + error.message,
     });
   }
 };
@@ -92,9 +91,8 @@ export const checkoutSuccess = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in checkoutSuccess controller " + error);
     res.status(500).json({
-      message: "Error : " + error,
+      message: "Internal server Error : " + error.message,
     });
   }
 };
