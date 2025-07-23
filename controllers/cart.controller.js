@@ -1,19 +1,22 @@
+// controllers/cart.controller.js
+import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
 
 export const getCartProducts = async (req, res) => {
   try {
-    const products = await Product.find({ _id: { $in: req.user.cartItems } });
+    const cart = await Cart.findOne({ user: req.user._id }).populate(
+      "items.product"
+    );
 
-    const cartItems = products.map((product) => {
-      const item = req.user.cartItems.find(
-        (cartItem) => cartItem.id === product.id
-      );
-      return { ...product.toJSON(), quantity: item.quantity };
-    });
+    if (!cart) return res.json([]);
+
+    const cartItems = cart.items.map((item) => ({
+      ...item.product.toObject(),
+      quantity: item.quantity,
+    }));
 
     res.json(cartItems);
   } catch (error) {
-    console.log("Error in getCartProducts controller", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -21,19 +24,26 @@ export const getCartProducts = async (req, res) => {
 export const addToCart = async (req, res) => {
   try {
     const { productId } = req.body;
-    const user = req.user;
 
-    const existingItem = user.cartItems.find((item) => item.id === productId);
+    let cart = await Cart.findOne({ user: req.user._id });
+
+    if (!cart) {
+      cart = new Cart({ user: req.user._id, items: [] });
+    }
+
+    const existingItem = cart.items.find((item) =>
+      item.product.equals(productId)
+    );
+
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
-      user.cartItems.push(productId);
+      cart.items.push({ product: productId, quantity: 1 });
     }
 
-    await user.save();
-    res.json(user.cartItems);
+    await cart.save();
+    res.json(cart.items);
   } catch (error) {
-    console.log("Error in addToCart controller", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -41,14 +51,18 @@ export const addToCart = async (req, res) => {
 export const removeAllFromCart = async (req, res) => {
   try {
     const { productId } = req.body;
-    const user = req.user;
-    if (!productId) {
-      user.cartItems = [];
+    let cart = await Cart.findOne({ user: req.user._id });
+
+    if (!cart) return res.json([]);
+
+    if (productId) {
+      cart.items = cart.items.filter((item) => !item.product.equals(productId));
     } else {
-      user.cartItems = user.cartItems.filter((item) => item.id !== productId);
+      cart.items = [];
     }
-    await user.save();
-    res.json(user.cartItems);
+
+    await cart.save();
+    res.json(cart.items);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -58,24 +72,22 @@ export const updateQuantity = async (req, res) => {
   try {
     const { id: productId } = req.params;
     const { quantity } = req.body;
-    const user = req.user;
-    const existingItem = user.cartItems.find((item) => item.id === productId);
 
-    if (existingItem) {
-      if (quantity === 0) {
-        user.cartItems = user.cartItems.filter((item) => item.id !== productId);
-        await user.save();
-        return res.json(user.cartItems);
-      }
+    let cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) return res.status(404).json({ message: "Cart not found" });
 
-      existingItem.quantity = quantity;
-      await user.save();
-      res.json(user.cartItems);
+    const item = cart.items.find((item) => item.product.equals(productId));
+    if (!item) return res.status(404).json({ message: "Item not found" });
+
+    if (quantity <= 0) {
+      cart.items = cart.items.filter((item) => !item.product.equals(productId));
     } else {
-      res.status(404).json({ message: "Product not found" });
+      item.quantity = quantity;
     }
+
+    await cart.save();
+    res.json(cart.items);
   } catch (error) {
-    console.log("Error in updateQuantity controller", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

@@ -7,30 +7,18 @@ import crypto from "crypto";
 
 const generateToken = (id) => {
   const accessToken = jwt.sign({ id }, process.env.ACCESS_JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "30d",
   });
-  const refreshToken = jwt.sign({ id }, process.env.REFRESH_JWT_SECRET, {
-    expiresIn: "7d",
-  });
-  return { accessToken, refreshToken };
+
+  return { accessToken };
 };
 
-const storeRefreshToken = async (id, refreshToken) => {
-  await redis.set(`refreshToken:${id}`, refreshToken, "EX", 7 * 24 * 60 * 60);
-};
-const setCookies = async (res, accessToken, refreshToken) => {
+const setCookies = async (res, accessToken) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: true,
     sameSite: "none",
-    maxAge: "30d",
-  });
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-
-    sameSite: "none",
-    maxAge: "30d",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 };
 export const Signup = async (req, res) => {
@@ -50,10 +38,9 @@ export const Signup = async (req, res) => {
       password: hashPassword,
     });
     await newUser.save();
-    const { accessToken, refreshToken } = generateToken(newUser._id);
-    await storeRefreshToken(newUser._id, refreshToken);
+    const { accessToken } = generateToken(newUser._id);
 
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, accessToken);
 
     res.status(200).json({
       user: {
@@ -93,9 +80,8 @@ export const Login = async (req, res) => {
         message: "Passwords is incorrect",
       });
     }
-    const { accessToken, refreshToken } = generateToken(user._id);
-    await storeRefreshToken(user._id, refreshToken);
-    setCookies(res, accessToken, refreshToken);
+    const { accessToken } = generateToken(user._id);
+    setCookies(res, accessToken);
     res.status(200).json({
       user: {
         _id: user._id,
@@ -110,16 +96,8 @@ export const Login = async (req, res) => {
 };
 export const Logout = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
-    if (refreshToken) {
-      const decoded = jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET);
-      await redis.del(`refreshToken:${decoded.id}`);
-    }
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
-    res.json({
-      message: "Log out successfully",
-    });
+    res.cookie("accessToken", "", { maxAge: 0 });
+    res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("error in Logout controller ", error);
     res.status(500).json({
@@ -167,7 +145,7 @@ export const resetPassword = async (req, res) => {
     }
     const user = await User.findOne({
       resetToken,
-      resetTokenExpiry: { $gt: Date.now() }, 
+      resetTokenExpiry: { $gt: Date.now() },
     });
 
     if (!user) {
